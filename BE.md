@@ -4,6 +4,7 @@
 - [Application Preparation](#application-preparation)
 - [Containerization with Docker](#containerization-with-docker)
 - [Deploy to Render](#deploy-to-render)
+- [CI/CD with GitHub Actions](#cicd-with-github-actions)
 
 ---
 
@@ -233,3 +234,70 @@ volumes:
 4. Connect repository
 5. Add Environment Variables
 6. Create Web Service
+
+---
+
+## CI/CD with GitHub Actions
+
+### .github/workflows/deploy.yml
+
+```yaml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: "ghcr.io/<username>/<repository>:latest"
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_HOOK }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u <username> --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Push Docker image to GHCR
+        run: docker push $IMAGE_NAME
+
+      - name: Trigger Render Deploy Hook
+        run: curl -X POST "$RENDER_DEPLOY_HOOK"
+
+      - name: Notify success
+        if: success()
+        run: echo 'Deployment successful!'
+
+      - name: Notify failure
+        if: failure()
+        run: echo 'Deployment failed!'
+
+      - name: Clean workspace
+        if: always()
+        run: |
+          echo 'Cleaning up workspace...'
+          sudo rm -rf * || true
+          echo 'Done!'
+```
+
+### Required GitHub Secrets
+- `GHCR_TOKEN` (from GitHub > Settings > Developer settings > Tokens)
+- `RENDER_DEPLOY_HOOK` (from Render dashboard > Settings > Deploy Hook)
+
+### Set GitHub Secrets
+1. Open repository
+2. Settings → Secrets and variables → Actions
+3. New repository secret
+4. `Name`: <secret_name>
+5. `Value`: <secret_value>
+6. Add secret
+
