@@ -6,6 +6,7 @@
 - [Deploy to Render](#deploy-to-render)
 - [CI/CD with GitHub Actions](#cicd-with-github-actions)
 - [CI/CD with Jenkins](#cicd-with-jenkins)
+- [Resources](#resources)
 
 ---
 
@@ -379,3 +380,12 @@ pipeline {
 7. `Script path`: Jenkinsfile
 8. Save
 
+---
+
+## Resources
+
+- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
+- [Docker Documentation](https://docs.docker.com/)
+- [Render Documentation](https://render.com/docs)
+- [Jenkins Documentation](https://www.jenkins.io/doc/)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
