@@ -5,6 +5,7 @@
 - [Containerization with Docker](#containerization-with-docker)
 - [Deploy to Render](#deploy-to-render)
 - [CI/CD with GitHub Actions](#cicd-with-github-actions)
+- [CI/CD with Jenkins](#cicd-with-jenkins)
 
 ---
 
@@ -300,4 +301,81 @@ jobs:
 4. `Name`: <secret_name>
 5. `Value`: <secret_value>
 6. Add secret
+
+---
+
+## CI/CD with Jenkins
+
+### Jenkinsfile
+
+```groovy
+pipeline {
+  agent any
+
+  environment {
+    IMAGE_NAME = "ghcr.io/<username>/<repository>:latest"
+    GHCR_TOKEN = credentials('GHCR_TOKEN')
+    RENDER_DEPLOY_HOOK = credentials('RENDER_HOOK')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Docker Build & Push') {
+      steps {
+        sh "docker build -t $IMAGE_NAME ."
+        sh "echo $GHCR_TOKEN | docker login ghcr.io -u <username> --password-stdin"
+        sh "docker push $IMAGE_NAME"
+      }
+    }
+
+    stage('Trigger Render Deploy') {
+      steps {
+        sh "curl -X POST $RENDER_DEPLOY_HOOK"
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Deployment successful!'
+    }
+    failure {
+      echo 'Deployment failed!'
+    }
+    always {
+      echo 'Cleaning up workspace...'
+      cleanWs()
+      echo 'Done!'
+    }
+  }
+}
+```
+
+### Required Jenkins UI Credentials
+- `GHCR_TOKEN` (from GitHub > Settings > Developer settings > Tokens)
+- `RENDER_DEPLOY_HOOK` (from Render dashboard > Settings > Deploy Hook)
+
+### Set Jenkins UI Credentials
+1. Open Jenkins UI → Manage Jenkins → Credentials
+2. System → Global
+3. Add credentials
+4. `Kind`: Secret text, 
+5. `Secret`: <GHCR_TOKEN/RENDER_DEPLOY_HOOK>
+6. `ID`: <credential_id>
+7. `Description`: <credential_desc>
+8. Create
+---
+
+### Jenkins Setup
+1. Jenkins UI → New Item
+2. `Name`: <item_name>
+3. Select Pipeline
+4. `Definition`: Pipeline script from SCM
+5. `SCM`: Git
+6. `Repository URL`: <repository_url>
+7. `Script path`: Jenkinsfile
+8. Save
 
