@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Application Preparation](#application-preparation)
 - [Containerization with Docker](#containerization-with-docker)
+- [Deploy to Render](#deploy-to-render)
 
 ---
 
@@ -219,3 +220,16 @@ services:
 volumes:
   pgdata:
 ```
+
+---
+
+## Deploy to Render
+
+### Deploy Steps
+
+1. Push code to GitHub
+2. Login to [Render.com](https://render.com)
+3. New > Web Service
+4. Connect repository
+5. Add Environment Variables
+6. Create Web Service
