@@ -2,6 +2,7 @@
 
 ## Table of Contents
 - [Application Preparation](#application-preparation)
+- [Containerization with Docker](#containerization-with-docker)
 
 ---
 
@@ -53,9 +54,12 @@
 spring.profiles.active=${SPRING_PROFILES_ACTIVE:prod}
 
 # Server Configuration
-server.port=${PORT:8080}
+server.port=${SERVER_PORT:8080}
 
 # Database Configuration
+spring.datasource.url=${DATABASE_URL}
+spring.datasource.username=${DATABASE_USERNAME}
+spring.datasource.password=${DATABASE_PASSWORD}
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA Configuration
@@ -71,11 +75,6 @@ management.endpoints.web.exposure.include=health,info
 ### application-dev.properties Configuration
 
 ```properties
-# Database Configuration (Local PostgreSQL)
-spring.datasource.url=${DATABASE_URL_DEV}
-spring.datasource.username=${DATABASE_USERNAME_DEV}
-spring.datasource.password=${DATABASE_PASSWORD_DEV}
-
 # JPA Configuration
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.properties.hibernate.format_sql=true
@@ -97,11 +96,6 @@ logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 ### application-prod.properties Configuration
 
 ```properties
-# Database Configuration (Supabase PostgreSQL)
-spring.datasource.url=${DATABASE_URL_PROD}
-spring.datasource.username=${DATABASE_USERNAME_PROD}
-spring.datasource.password=${DATABASE_PASSWORD_PROD}
-
 # JPA Configuration
 spring.jpa.hibernate.ddl-auto=validate
 
@@ -128,13 +122,100 @@ SPRING_PROFILE_ACTIVE=<dev/prod>
 # Server Port
 PORT=8080
 
-# Database Info (Local PostgreSQL)
-DATABASE_URL_DEV=jdbc:postgresql://<db_host>:<db_port>/<db_name>
-DATABASE_USERNAME_DEV=<db_username>
-DATABASE_PASSWORD_DEV=<db_password>
+# Database Info
+DATABASE_HOST=<db_host>
+DATABASE_PORT=<db_port>
+DATABASE_NAME=<db_name>
+DATABASE_URL=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+DATABASE_USERNAME=<db_username>
+DATABASE_PASSWORD=<db_password>
+```
 
-# Database Info (Supabase PostgreSQL)
-DATABASE_URL_PROD=jdbc:postgresql://<db_host>:<db_port>/<db_name>?sslmode=require
-DATABASE_USERNAME_PROD=<db_username>
-DATABASE_PASSWORD_PROD=<db_password>
+---
+
+## Containerization with Docker
+
+### Dockerfile (Multi-stage Build)
+
+```dockerfile
+# Stage 1: Build
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+# Create a non-root user
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+COPY --from=build /app/target/*.jar app.jar
+
+# Optional: only needed if app writes to /app
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8080
+
+# Add a health check: 
+# - Call the `/api/health` endpoint every 30 seconds to verify if the application is running normally
+# - If it fails 3 consecutive times within a 3-second timeout, the container is considered unhealthy
+# - The first check will start after the container has been running for 40 seconds
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+
+# Run the application with a minimum memory allocation of 256MB and a maximum of 512MB.
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
+```
+
+---
+
+### .dockerignore
+
+```
+target/
+.mvn/
+.git/
+.gitignore
+*.md
+.env
+```
+
+### docker-compose.yml (Development)
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "${SERVER_PORT}:8080"
+    environment:
+      SPRING_PROFILE_ACTIVE: ${SPRING_PROFILE_ACTIVE}
+      SPRING_DATASOURCE_URL: ${DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${DATABASE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "${DATABASE_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
 ```
