@@ -241,6 +241,30 @@ volumes:
 
 ## CI/CD with GitHub Actions
 
+### .github/workflows/keep-alive.yml (to prevent cold start in free Render)
+
+```yaml
+name: Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *' # Every 14 minutes
+    # - cron: '*/14 8-18 * * 1-5' # Every 14 minutes between 8 and 18 between Monday and Friday
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    env:
+      RENDER_URL: ${{ secrets.RENDER_URL }}
+      HEALTH_ENDPOINT: <health_check_endpoiny>
+
+    steps:
+      - name: Ping health check endpoint
+        run: curl -sS $RENDER_URL/$HEALTH_ENDPOINT > /dev/null
+```
+
+
 ### .github/workflows/deploy.yml
 
 ```yaml
