@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Application Preparation](#application-preparation)
 - [Containerization with Docker](#containerization-with-docker)
+- [Supabase Setup](#supabase-setup)
 - [Deploy to Render](#deploy-to-render)
 - [CI/CD with GitHub Actions](#cicd-with-github-actions)
 - [CI/CD with Jenkins](#cicd-with-jenkins)
@@ -130,7 +131,7 @@ PORT=8080
 DATABASE_HOST=<db_host>
 DATABASE_PORT=<db_port>
 DATABASE_NAME=<db_name>
-DATABASE_URL=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+DATABASE_URL=jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME} # add `?sslmode=require` at the end of the url for Supabase
 DATABASE_USERNAME=<db_username>
 DATABASE_PASSWORD=<db_password>
 ```
@@ -226,11 +227,33 @@ volumes:
 
 ---
 
+## Supabase Setup
+
+### Setup Steps
+
+1. Login to [Supabase.com](https://supabase.com)
+2. New Project
+3. Fill details:
+
+   `Organization`: <select_or_create_new>
+
+   `Name`: <database_name>
+
+   `Database Password`: <database_password>
+
+   `Region`: <select_the_closest_one>
+4. Create new project
+
+---
+
+---
+
 ## Deploy to Render
 
 ### Deploy Steps
 
 1. Push code to GitHub
+
 2. Login to [Render.com](https://render.com)
 3. New > Web Service
 4. Connect repository
@@ -323,8 +346,11 @@ jobs:
 1. Open repository
 2. Settings → Secrets and variables → Actions
 3. New repository secret
-4. `Name`: <secret_name>
-5. `Value`: <secret_value>
+4. Fill details:
+
+   `Name`: <secret_name>
+
+   `Value`: <secret_value>
 6. Add secret
 
 ---
@@ -387,22 +413,33 @@ pipeline {
 1. Open Jenkins UI → Manage Jenkins → Credentials
 2. System → Global
 3. Add credentials
-4. `Kind`: Secret text, 
-5. `Secret`: <GHCR_TOKEN/RENDER_DEPLOY_HOOK>
-6. `ID`: <credential_id>
-7. `Description`: <credential_desc>
-8. Create
+4. Fill details:
+
+   `Kind`: Secret text, 
+   
+   `Secret`: <GHCR_TOKEN/RENDER_DEPLOY_HOOK>
+   
+   `ID`: <credential_id>
+   
+   `Description`: <credential_desc>
+5. Create
 ---
 
 ### Jenkins Setup
 1. Jenkins UI → New Item
-2. `Name`: <item_name>
-3. Select Pipeline
-4. `Definition`: Pipeline script from SCM
-5. `SCM`: Git
-6. `Repository URL`: <repository_url>
-7. `Script path`: Jenkinsfile
-8. Save
+2. Select Pipeline
+3. Fill details:
+
+   `Name`: <item_name>
+   
+   `Definition`: Pipeline script from SCM
+   
+   `SCM`: Git
+   
+   `Repository URL`: <repository_url>
+   
+   `Script path`: Jenkinsfile
+4. Save
 
 ---
 
@@ -410,6 +447,7 @@ pipeline {
 
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)
 - [Docker Documentation](https://docs.docker.com/)
+- [Supabase Documentation](https://supabase.com/docs)
 - [Render Documentation](https://render.com/docs)
 - [Jenkins Documentation](https://www.jenkins.io/doc/)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
